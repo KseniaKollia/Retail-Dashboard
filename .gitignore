@@ -1,0 +1,15 @@
+# Secrets / Private Data
+.streamlit/secrets.toml
+
+# Python Virtual Environments
+venv/
+.venv/
+env/
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# OS generated files
+.DS_Store
+Thumbs.db
