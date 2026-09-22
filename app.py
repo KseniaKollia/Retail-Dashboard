@@ -4,41 +4,47 @@ import pandas as pd
 # -------------------
 # PAGE CONFIG
 # -------------------
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide", page_title="Store Stand Viewer")
 
 # -------------------
-# MOCK DATA GENERATOR (Fallback)
+# MOCK DATA GENERATOR
 # -------------------
 def get_mock_data():
     return pd.DataFrame({
-        "Ημερομηνία Επίσκεψης": ["01/03/2026", "15/03/2026"],
-        "Προϊόν": ["Προϊόν Α", "Προϊόν Β"],
-        "Ενημέρωση": ["Update 1", "Update 1"],
-        "Αλυσίδα": ["Supermarket A", "Supermarket B"],
-        "Διεύθυνση Καταστήματος": ["Λεωφ. Κηφισίας 100", "Εγνατία 50"],
-        "Πόλη": ["Αθήνα", "Θεσσαλονίκη"],
-        "Παρατηρήσεις": ["Όλα καλά", "Χρειάζεται αναπλήρωση"],
+        "Ημερομηνία Επίσκεψης": ["01/03/2026", "05/03/2026", "12/03/2026", "18/03/2026"],
+        "Προϊόν": ["Προϊόν Α", "Προϊόν Β", "Προϊόν Α", "Προϊόν Γ"],
+        "Ενημέρωση": ["Update 1", "Update 1", "Update 2", "Update 1"],
+        "Αλυσίδα": ["Supermarket Alpha", "Supermarket Beta", "Supermarket Alpha", "Supermarket Gamma"],
+        "Διεύθυνση Καταστήματος": ["Λεωφ. Κηφισίας 100", "Εγνατία 50", "Πανεπιστημίου 20", "Τσιμισκή 10"],
+        "Πόλη": ["Αθήνα", "Θεσσαλονίκη", "Αθήνα", "Θεσσαλονίκη"],
+        "Παρατηρήσεις": [
+            "Πλήρης τοποθέτηση στο σταντ", 
+            "Χρειάζεται αναπλήρωση σε 2 κωδικούς", 
+            "Τοποθετήθηκε νέο προωθητικό υλικό", 
+            "Καλή παρουσίαση στην είσοδο"
+        ],
         "Φωτογραφία Merchandiser 1": [
-            "https://via.placeholder.com/300x400.png?text=Stand+1",
-            "https://via.placeholder.com/300x400.png?text=Stand+2"
+            "https://picsum.photos/id/10/400/500",
+            "https://picsum.photos/id/20/400/500",
+            "https://picsum.photos/id/30/400/500",
+            "https://picsum.photos/id/40/400/500"
+        ],
+        "Φωτογραφία Merchandiser 2": [
+            "https://picsum.photos/id/15/400/500",
+            "",
+            "https://picsum.photos/id/35/400/500",
+            ""
         ]
     })
 
 # -------------------
-# LOAD DATA
+# LOAD DATA (Mock)
 # -------------------
-# Διαβάζει το URL από τα secrets (.streamlit/secrets.toml)
-# Αν δεν υπάρχει, χρησιμοποιεί dummy δεδομένα για επίδειξη
-if "DATA_URL" in st.secrets:
-    sheet_url = st.secrets["DATA_URL"]
-    df = pd.read_csv(sheet_url)
-else:
-    df = get_mock_data()
-
+df = get_mock_data()
 df.columns = df.columns.str.strip()
 
 # -------------------
-# DATE PARSING (Greek format)
+# DATE PARSING
 # -------------------
 df["Ημερομηνία Επίσκεψης"] = pd.to_datetime(
     df["Ημερομηνία Επίσκεψης"],
@@ -60,7 +66,7 @@ df["Μήνας"] = df["Ημερομηνία Επίσκεψης"].dt.month.map(mo
 # -------------------
 # TITLE
 # -------------------
-st.title("Store Stand Viewer")
+st.title(" Store Stand Viewer (Portfolio Demo)")
 
 # -------------------
 # SEARCH
@@ -68,32 +74,32 @@ st.title("Store Stand Viewer")
 search = st.text_input("🔍 Αναζήτηση (αλυσίδα, πόλη, παρατήρηση...)")
 
 # -------------------
-# FILTERS (ONE ROW)
+# FILTERS
 # -------------------
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    months_available = sorted(df["Μήνας"].dropna().unique())
-    month = st.selectbox("Μήνας", months_available) if months_available else None
+    months_available = ["Όλοι"] + sorted(df["Μήνας"].dropna().unique().tolist())
+    month = st.selectbox("Μήνας", months_available)
 
 with col2:
-    products_available = df["Προϊόν"].dropna().unique()
-    product = st.selectbox("Προϊόν", products_available) if len(products_available) > 0 else None
+    products_available = ["Όλα"] + df["Προϊόν"].dropna().unique().tolist()
+    product = st.selectbox("Προϊόν", products_available)
 
 with col3:
-    updates_available = df["Ενημέρωση"].dropna().unique()
-    update_no = st.selectbox("Ενημέρωση", updates_available) if len(updates_available) > 0 else None
+    updates_available = ["Όλες"] + df["Ενημέρωση"].dropna().unique().tolist()
+    update_no = st.selectbox("Ενημέρωση", updates_available)
 
 # -------------------
 # FILTER DATA
 # -------------------
 filtered = df.copy()
 
-if month:
+if month != "Όλοι":
     filtered = filtered[filtered["Μήνας"] == month]
-if product:
+if product != "Όλα":
     filtered = filtered[filtered["Προϊόν"] == product]
-if update_no:
+if update_no != "Όλες":
     filtered = filtered[filtered["Ενημέρωση"] == update_no]
 
 # -------------------
@@ -111,15 +117,9 @@ if search:
 # IMAGE COLUMNS
 # -------------------
 image_cols = [
-    "Φωτογραφία Merchandiser 1", "Φωτογραφία Merchandiser 2",
-    "Φωτογραφία Merchandiser 3", "Φωτογραφία Merchandiser 4",
-    "Φωτογραφία Merchandiser 5", "Φωτογραφία Πωλητή 1",
-    "Φωτογραφία Πωλητή 2", "Φωτογραφία Πωλητή 3",
-    "Φωτογραφία Πωλητή 4", "Φωτογραφία Πωλητή 5"
+    "Φωτογραφία Merchandiser 1", 
+    "Φωτογραφία Merchandiser 2"
 ]
-
-# Keep only image columns that exist in the dataframe
-image_cols = [c for c in image_cols if c in filtered.columns]
 
 # -------------------
 # STATE
@@ -127,16 +127,13 @@ image_cols = [c for c in image_cols if c in filtered.columns]
 if "selected_row" not in st.session_state:
     st.session_state.selected_row = None
 
-# -------------------
-# INFO
-# -------------------
 if st.session_state.selected_row is None:
-    st.info("👉 Πάτησε σε μια φωτογραφία για να δεις details")
+    st.info("👉 Πάτησε σε μια φωτογραφία για να δεις λεπτομέρειες στο sidebar")
 
 # -------------------
-# GRID FIXED
+# GRID DISPLAY
 # -------------------
-st.subheader("📸 Stand Photos")
+st.subheader("📸 Φωτογραφίες Stand")
 
 all_images = []
 
@@ -147,14 +144,14 @@ for _, row in filtered.iterrows():
             all_images.append((img, row))
 
 if all_images:
-    cols = st.columns(5)
+    cols = st.columns(4)
     for i, (img, row) in enumerate(all_images):
-        with cols[i % 5]:
+        with cols[i % 4]:
             st.image(str(img).strip(), use_container_width=True)
-            if st.button("📌 See Details", key=f"img_{i}"):
+            if st.button("📌 Details", key=f"img_{i}"):
                 st.session_state.selected_row = row.to_dict()
 else:
-    st.warning("Δεν βρέθηκαν φωτογραφίες με τα επιλεγμένα κριτήρια.")
+    st.warning("Δεν βρέθηκαν αποτελέσματα για τα επιλεγμένα φίλτρα.")
 
 # -------------------
 # SIDEBAR DETAILS
@@ -162,10 +159,17 @@ else:
 if st.session_state.selected_row:
     d = st.session_state.selected_row
 
-    st.sidebar.title("📌 Details")
-    st.sidebar.write(f"🏬 Αλυσίδα: {d.get('Αλυσίδα', '-')}")
-    st.sidebar.write(f"📍 Οδός: {d.get('Διεύθυνση Καταστήματος', '-')}")
-    st.sidebar.write(f"🏙️ Πόλη: {d.get('Πόλη', '-')}")
-    st.sidebar.write(f"🔢 Ενημέρωση: {d.get('Ενημέρωση', '-')}")
-    st.sidebar.write(f"📅 Ημερομηνία: {d.get('Ημερομηνία Επίσκεψης', '-')}")
-    st.sidebar.write(f"📝 Παρατηρήσεις: {d.get('Παρατηρήσεις', '-')}")
+    st.sidebar.title("📌 Λεπτομέρειες Stand")
+    st.sidebar.write(f"🏬 **Αλυσίδα:** {d.get('Αλυσίδα', '-')}")
+    st.sidebar.write(f"📍 **Διεύθυνση:** {d.get('Διεύθυνση Καταστήματος', '-')}")
+    st.sidebar.write(f"🏙️ **Πόλη:** {d.get('Πόλη', '-')}")
+    st.sidebar.write(f"🔢 **Ενημέρωση:** {d.get('Ενημέρωση', '-')}")
+    
+    date_val = d.get('Ημερομηνία Επίσκεψης', '-')
+    if pd.notna(date_val):
+        date_str = pd.to_datetime(date_val).strftime('%d/%m/%Y')
+    else:
+        date_str = '-'
+        
+    st.sidebar.write(f"📅 **Ημερομηνία:** {date_str}")
+    st.sidebar.write(f"📝 **Παρατηρήσεις:** {d.get('Παρατηρήσεις', '-')}")
